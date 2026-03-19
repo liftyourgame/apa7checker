@@ -38,7 +38,7 @@ app.use('/api', checkRouter);
 if (isProd) {
   const dist = path.resolve(__dirname, '../../frontend/dist');
   app.use(express.static(dist));
-  app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+  app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
 }
 
 // ---------------------------------------------------------------------------
