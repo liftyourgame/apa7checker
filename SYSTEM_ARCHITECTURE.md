@@ -11,14 +11,14 @@ graph TD
         Results[Results Dashboard]
     end
 
-    subgraph Backend["Backend (FastAPI / Python)"]
+    subgraph Backend["Backend (Express / TypeScript)"]
         Router[POST /api/check]
-        Parser[docx_parser.py\nExtract text + page numbers]
-        CitExt[citation_extractor.py\nRegex: find in-text citations]
-        BibParse[bibliography_parser.py\nExtract References section]
-        GPT[gpt_validator.py\nOpenAI GPT-4o validation]
-        CrossRef[cross_referencer.py\nMatch citations ↔ bibliography]
-        Schemas[schemas.py\nPydantic models]
+        Parser[docxParser.ts\nExtract text + page numbers]
+        CitExt[citationExtractor.ts\nRegex: find in-text citations]
+        BibParse[bibliographyParser.ts\nExtract References section]
+        GPT[gptValidator.ts\nOpenAI GPT-4o validation]
+        CrossRef[crossReferencer.ts\nMatch citations ↔ bibliography]
+        Schemas[schemas.ts\nZod schemas + TS types]
     end
 
     subgraph External["External Services"]
@@ -45,36 +45,36 @@ graph TD
 sequenceDiagram
     actor User
     participant FE as Frontend (React)
-    participant BE as FastAPI Backend
-    participant DP as docx_parser
-    participant CE as citation_extractor
-    participant BP as bibliography_parser
-    participant GV as gpt_validator
-    participant CR as cross_referencer
+    participant BE as Express Backend (TS)
+    participant DP as docxParser
+    participant CE as citationExtractor
+    participant BP as bibliographyParser
+    participant GV as gptValidator
+    participant CR as crossReferencer
     participant OA as OpenAI API
 
     User->>FE: Drops / selects .docx file
     FE->>BE: POST /api/check (multipart)
-    BE->>DP: parse_document(file_bytes)
+    BE->>DP: parseDocument(buffer)
     DP-->>BE: paragraphs with page numbers
 
-    BE->>CE: extract_citations(paragraphs)
-    CE-->>BE: list[CitationCandidate]
+    BE->>CE: extractCitations(paragraphs)
+    CE-->>BE: CitationCandidate[]
 
-    BE->>BP: extract_bibliography(paragraphs)
-    BP-->>BE: list[ReferenceEntry]
+    BE->>BP: extractBibliography(paragraphs)
+    BP-->>BE: ReferenceEntry[]
 
-    BE->>GV: validate_citations(citations)
+    BE->>GV: validateCitations(citations)
     GV->>OA: Chat completion (batch prompt)
     OA-->>GV: JSON validation results
-    GV-->>BE: list[CitationResult]
+    GV-->>BE: CitationResult[]
 
-    BE->>GV: validate_bibliography(references)
+    BE->>GV: validateBibliography(references)
     GV->>OA: Chat completion (batch prompt)
     OA-->>GV: JSON validation results
-    GV-->>BE: list[BibliographyResult]
+    GV-->>BE: BibliographyResult[]
 
-    BE->>CR: cross_reference(citations, references)
+    BE->>CR: crossReference(citations, references)
     CR-->>BE: CrossReferenceResult
 
     BE-->>FE: CheckResponse JSON
@@ -88,11 +88,11 @@ sequenceDiagram
 ```mermaid
 graph LR
     subgraph services["services/"]
-        A[docx_parser.py\n─────────────\nparse_document()\ntrack page breaks\nreturn paragraphs+pages]
-        B[citation_extractor.py\n─────────────\nextract_citations()\nregex patterns for\nparenthetical + narrative]
-        C[bibliography_parser.py\n─────────────\nextract_bibliography()\ndetect References heading\nparse individual entries]
-        D[gpt_validator.py\n─────────────\nvalidate_citations()\nvalidate_bibliography()\nbatch GPT calls\nJSON mode output]
-        E[cross_referencer.py\n─────────────\ncross_reference()\nauthor-year key matching\nunmatched detection]
+        A[docxParser.ts\n─────────────\nparseDocument()\ntrack page breaks\nreturn paragraphs+pages]
+        B[citationExtractor.ts\n─────────────\nextractCitations()\nregex patterns for\nparenthetical + narrative]
+        C[bibliographyParser.ts\n─────────────\nextractBibliography()\ndetect References heading\nparse individual entries]
+        D[gptValidator.ts\n─────────────\nvalidateCitations()\nvalidateBibliography()\nbatch GPT calls\nJSON mode output]
+        E[crossReferencer.ts\n─────────────\ncrossReference()\nauthor-year key matching\nunmatched detection]
     end
 
     A --> B
@@ -109,51 +109,51 @@ graph LR
 ```mermaid
 classDiagram
     class CitationCandidate {
-        +int page_number
-        +str citation_text
-        +str surrounding_context
-        +bool has_page_ref
+        +number pageNumber
+        +string citationText
+        +string surroundingContext
+        +boolean hasPageRef
     }
 
     class CitationResult {
-        +int page_number
-        +str citation_text
-        +str issue
+        +number pageNumber
+        +string citationText
+        +string issue
         +Severity severity
     }
 
     class ReferenceEntry {
-        +str entry_text
-        +bool has_hanging_indent
-        +int position
+        +string entryText
+        +boolean hasHangingIndent
+        +number position
     }
 
     class BibliographyResult {
-        +str entry_text
-        +str issue
+        +string entryText
+        +string issue
         +Severity severity
     }
 
     class CrossReferenceResult {
-        +list~str~ citations_without_reference
-        +list~str~ references_without_citation
+        +string[] citationsWithoutReference
+        +string[] referencesWithoutCitation
     }
 
     class Summary {
-        +int total_citations
-        +int citation_errors
-        +int citation_warnings
-        +int bibliography_errors
-        +int bibliography_warnings
-        +int unmatched_citations
-        +int unmatched_references
+        +number totalCitations
+        +number citationErrors
+        +number citationWarnings
+        +number bibliographyErrors
+        +number bibliographyWarnings
+        +number unmatchedCitations
+        +number unmatchedReferences
     }
 
     class CheckResponse {
         +Summary summary
-        +list~CitationResult~ citations
-        +list~BibliographyResult~ bibliography
-        +CrossReferenceResult cross_reference
+        +CitationResult[] citations
+        +BibliographyResult[] bibliography
+        +CrossReferenceResult crossReference
     }
 
     CheckResponse --> Summary
@@ -189,20 +189,20 @@ graph TD
 graph TD
     subgraph Local["Local / Single-Server Deployment"]
         FE_Build["Frontend\nnpm run build → dist/"]
-        Static["Uvicorn serves\n/dist as static files"]
-        API["FastAPI\n:8000/api/*"]
+        Static["Express serves\n/dist as static files"]
+        API["Express\n:3001/api/*"]
         ENV[".env\nOPENAI_API_KEY"]
     end
 
-    Browser["User Browser"] -->|HTTP :8000| Static
+    Browser["User Browser"] -->|HTTP :3001| Static
     Browser -->|POST /api/check| API
     API --> ENV
     API -->|HTTPS| OA["OpenAI API"]
     FE_Build --> Static
 ```
 
-> **Note:** For production, place an Nginx reverse proxy in front of Uvicorn and serve the
-> React build from Nginx directly. The FastAPI backend remains an internal service.
+> **Note:** For production, place an Nginx reverse proxy in front of the Node server and
+> serve the React build from Nginx directly. The Express backend remains an internal service.
 
 ---
 

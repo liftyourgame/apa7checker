@@ -29,9 +29,9 @@ A no-login web application that accepts a `.docx` upload and:
 
 ## Tech Stack at a Glance
 
-- **Backend**: Python 3.11+, FastAPI, Uvicorn, `python-docx`, `openai`, `termcolor`
-- **Frontend**: React 18 (Vite), Tailwind CSS, Axios, `papaparse`
-- **LLM**: OpenAI GPT-4o via `openai` Python SDK (JSON mode)
+- **Backend**: TypeScript 5+ / Node.js 20+, Express 4, `multer`, `mammoth`, `docx`, `openai` npm SDK, `zod`, `chalk`, `dotenv`
+- **Frontend**: React 18 (Vite + TypeScript), Tailwind CSS, Axios, `papaparse`
+- **LLM**: OpenAI GPT-4o via `openai` npm SDK (JSON mode)
 
 ---
 
@@ -40,16 +40,18 @@ A no-login web application that accepts a `.docx` upload and:
 ```
 APA7/
 ├── backend/
-│   ├── main.py
-│   ├── routers/check.py
-│   ├── services/
-│   │   ├── docx_parser.py
-│   │   ├── citation_extractor.py
-│   │   ├── bibliography_parser.py
-│   │   ├── gpt_validator.py
-│   │   └── cross_referencer.py
-│   ├── models/schemas.py
-│   ├── requirements.txt
+│   ├── src/
+│   │   ├── server.ts
+│   │   ├── routes/check.ts
+│   │   ├── services/
+│   │   │   ├── docxParser.ts
+│   │   │   ├── citationExtractor.ts
+│   │   │   ├── bibliographyParser.ts
+│   │   │   ├── gptValidator.ts
+│   │   │   └── crossReferencer.ts
+│   │   └── types/schemas.ts
+│   ├── package.json
+│   ├── tsconfig.json
 │   └── .env.example
 ├── frontend/
 │   ├── src/
@@ -72,21 +74,23 @@ APA7/
 - Follow the separation of concerns described in `REQUIREMENTS.md §5` and `SYSTEM_ARCHITECTURE.md §3`.
 - Never persist uploaded files to disk. All document processing happens in memory within the
   request lifecycle.
-- All backend services must have docstrings and `try/except` blocks with `termcolor`-coloured
-  log output for key steps and errors.
-- Use Pydantic models in `schemas.py` for all request/response types.
+- All backend services must have JSDoc comments and `try/catch` blocks with `chalk`-coloured
+  console output for key steps and errors.
+- Use `zod` schemas in `types/schemas.ts` for all request/response types; infer TypeScript
+  types from the schemas (`z.infer<typeof MySchema>`).
 
 ### Backend
 
 - The single API endpoint is `POST /api/check` — do not add additional endpoints without
   updating `REQUIREMENTS.md`.
-- GPT calls go exclusively through `gpt_validator.py`. No other service should import
+- GPT calls go exclusively through `gptValidator.ts`. No other service should import
   `openai` directly.
-- Use JSON mode (`response_format={"type": "json_object"}`) for all GPT calls.
-- Implement graceful fallback in `gpt_validator.py`: if the OpenAI call fails, return
-  regex-only results and set a `gpt_unavailable: true` flag in the response.
+- Use JSON mode (`response_format: { type: "json_object" }`) for all GPT calls.
+- Implement graceful fallback in `gptValidator.ts`: if the OpenAI call fails, return
+  regex-only results and set a `gptUnavailable: true` flag in the response.
 - Batch citations in groups of ≤ 20 per GPT call (see `SYSTEM_ARCHITECTURE.md §7`).
-- Environment variables are loaded via `python-dotenv` from `backend/.env`.
+- Environment variables are loaded via `dotenv` from `backend/.env`.
+- Use strict TypeScript (`"strict": true` in `tsconfig.json`). No `any` types.
 
 ### Frontend
 
@@ -96,11 +100,13 @@ APA7/
 - Filtering (errors / warnings / all) is implemented with React state; no external table
   library is needed.
 - CSV export uses `papaparse` and runs entirely in the browser.
+- Share Zod type definitions between backend and frontend via a `shared/` package or by
+  copying the inferred types into `frontend/src/types/api.ts`.
 
 ### Testing
 
-- Backend: use `pytest` with `httpx` async client for endpoint tests.
-- Mock OpenAI calls in tests using `unittest.mock.patch`.
+- Backend: use `Jest` + `supertest` for endpoint integration tests.
+- Mock OpenAI calls in tests using `jest.mock('openai')`.
 - Frontend: use Vitest + React Testing Library.
 
 ### Environment Variables
@@ -110,6 +116,7 @@ APA7/
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o
 MAX_UPLOAD_SIZE_MB=10
+PORT=3001
 ```
 
 Copy `backend/.env.example` to `backend/.env` and populate before running.
@@ -123,7 +130,7 @@ A feature or fix is complete when:
 - [ ] Functionality matches the relevant section of `REQUIREMENTS.md`
 - [ ] Architecture aligns with `SYSTEM_ARCHITECTURE.md`
 - [ ] No uploaded file is written to disk
-- [ ] Linter passes (`ruff` for backend, `eslint` for frontend)
-- [ ] `termcolor` progress/error logging present in all backend service functions
-- [ ] Pydantic schemas updated if the API contract changes
+- [ ] Linter passes (`eslint` + `prettier` for both backend and frontend)
+- [ ] `chalk` progress/error logging present in all backend service functions
+- [ ] Zod schemas updated if the API contract changes
 - [ ] `REQUIREMENTS.md` and `SYSTEM_ARCHITECTURE.md` updated if scope changes

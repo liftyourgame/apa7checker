@@ -31,11 +31,17 @@ APA7 rules. For each citation found the app records:
 
 #### APA7 In-Text Citation Rules Checked
 
+> **Project policy (stricter than APA7 default):** Every in-text citation — whether a
+> direct quote, paraphrase, or summary — **must** include either a page number
+> (`p. X` / `pp. X–Y`) or a section/paragraph reference (`para. X` / `Section X`).
+> Citations that contain only `(Author, Year)` are flagged as **errors**, not warnings.
+
 1. **Basic format** — `(Author, Year)` e.g. `(Smith, 2020)`
-2. **Direct quote requires page number** — `(Author, Year, p. X)` or `(Author, Year, pp. X–Y)`
+2. **Page or section reference required on all citations** — must include `p. X`, `pp. X–Y`,
+   `para. X`, or `Section X`; `(Author, Year)` alone is an **error**
 3. **Multiple authors** — two authors use `&` inside parentheses, `and` in narrative
 4. **Three or more authors** — first author + `et al.` from first citation
-5. **No author** — title (shortened, italicised) + year
+5. **No author** — title (shortened, italicised) + year + page/section reference
 6. **Organisation as author** — full name on first occurrence, abbreviation thereafter
 7. **Year format** — four-digit year; `n.d.` for no date
 8. **Secondary sources** — `as cited in` format
@@ -53,7 +59,7 @@ The app identifies the **References** (bibliography) section and validates each 
 
 #### APA7 Bibliography Rules Checked
 
-1. **Hanging indent** — detected via paragraph formatting metadata in `python-docx`
+1. **Hanging indent** — detected via paragraph formatting metadata in `docx` (npm)
 2. **Alphabetical order** — entries sorted by first author surname
 3. **Author format** — `Surname, I. I.` (last name, initials)
 4. **Year in parentheses** — `(2020).`
@@ -101,19 +107,21 @@ The app identifies the **References** (bibliography) section and validates each 
 
 | Component | Technology |
 |---|---|
-| Language | Python 3.11+ |
-| Framework | FastAPI |
-| ASGI server | Uvicorn |
-| Word parsing | `python-docx` |
-| LLM client | `openai` (GPT-4o recommended) |
-| Env config | `python-dotenv` |
-| Logging | `termcolor` + standard `logging` |
+| Language | TypeScript 5+ (Node.js 20+) |
+| Framework | Express 4 |
+| HTTP server | `tsx` (dev) / compiled JS (prod) |
+| File upload | `multer` (multipart/form-data middleware) |
+| Word parsing | `mammoth` (text extraction) + `docx` (structural metadata) |
+| LLM client | `openai` npm SDK (GPT-4o recommended) |
+| Validation | `zod` (request/response schemas) |
+| Env config | `dotenv` |
+| Logging | `chalk` |
 
 ### Frontend
 
 | Component | Technology |
 |---|---|
-| Framework | React 18 (Vite) |
+| Framework | React 18 (Vite + TypeScript) |
 | Styling | Tailwind CSS |
 | HTTP client | Axios |
 | Table/filter | React state (no external table library required) |
@@ -173,18 +181,20 @@ The app identifies the **References** (bibliography) section and validates each 
 ```
 APA7/
 ├── backend/
-│   ├── main.py                  # FastAPI app entry point
-│   ├── routers/
-│   │   └── check.py             # /api/check endpoint
-│   ├── services/
-│   │   ├── docx_parser.py       # python-docx extraction & page tracking
-│   │   ├── citation_extractor.py# Regex-based in-text citation finder
-│   │   ├── bibliography_parser.py # Reference section extractor
-│   │   ├── gpt_validator.py     # OpenAI GPT validation calls
-│   │   └── cross_referencer.py  # Match citations ↔ bibliography
-│   ├── models/
-│   │   └── schemas.py           # Pydantic request/response models
-│   ├── requirements.txt
+│   ├── src/
+│   │   ├── server.ts                   # Express app entry point
+│   │   ├── routes/
+│   │   │   └── check.ts                # POST /api/check route
+│   │   ├── services/
+│   │   │   ├── docxParser.ts           # mammoth + docx extraction & page tracking
+│   │   │   ├── citationExtractor.ts    # Regex-based in-text citation finder
+│   │   │   ├── bibliographyParser.ts   # Reference section extractor
+│   │   │   ├── gptValidator.ts         # OpenAI GPT validation calls
+│   │   │   └── crossReferencer.ts      # Match citations ↔ bibliography
+│   │   └── types/
+│   │       └── schemas.ts              # Zod schemas + inferred TS types
+│   ├── package.json
+│   ├── tsconfig.json
 │   └── .env.example
 ├── frontend/
 │   ├── src/
@@ -213,6 +223,7 @@ APA7/
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o
 MAX_UPLOAD_SIZE_MB=10
+PORT=3001
 ```
 
 ---
@@ -220,13 +231,16 @@ MAX_UPLOAD_SIZE_MB=10
 ## 7. GPT Prompt Strategy
 
 - **Citation validation**: Send batches of extracted citation strings + surrounding sentence
-  context to GPT with a structured JSON-output prompt. Ask GPT to return severity and issue
-  description per citation.
+  context to GPT with a structured JSON-output prompt. The system prompt must explicitly
+  instruct GPT that **every citation requires a page number (`p. X` / `pp. X–Y`) or a
+  section/paragraph reference (`para. X` / `Section X`)** — citations with only
+  `(Author, Year)` must be returned with `severity: "error"`. Ask GPT to return severity
+  and issue description per citation.
 - **Bibliography validation**: Send each reference entry individually or in batches to GPT
   with a structured JSON-output prompt.
 - **Prompt style**: System prompt sets GPT as an "APA7 citation expert"; user prompt
-  provides the citation data. JSON mode (`response_format={"type":"json_object"}`) is used
-  for reliable parsing.
+  provides the citation data. JSON mode (`response_format: { type: "json_object" }`) is
+  used for reliable parsing.
 - **Fallback**: If GPT call fails or times out, return regex-only results with a warning
   banner in the UI.
 
