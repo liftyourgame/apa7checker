@@ -7,13 +7,13 @@ phase before starting the next.
 
 ## Phase 1 — Repository Scaffolding
 
-- [ ] Create `backend/` directory with `package.json`, `tsconfig.json`, `.env.example`
-- [ ] Install backend dependencies: `express`, `multer`, `mammoth`, `docx`, `openai`, `zod`, `dotenv`, `chalk`, `cors`
-- [ ] Install backend dev dependencies: `typescript`, `tsx`, `@types/express`, `@types/multer`, `@types/node`, `@types/cors`, `eslint`, `prettier`
-- [ ] Create `frontend/` with Vite + React + TypeScript template (`npm create vite`)
-- [ ] Install frontend dependencies: `axios`, `papaparse`, `@types/papaparse`
-- [ ] Install and configure Tailwind CSS in frontend
-- [ ] Add root-level `.gitignore` covering `node_modules`, `.env`, `dist`
+- [x] Create `backend/` directory with `package.json`, `tsconfig.json`, `.env.example`
+- [x] Install backend dependencies: `express`, `multer`, `mammoth`, `docx`, `openai`, `zod`, `dotenv`, `chalk`, `cors`
+- [x] Install backend dev dependencies: `typescript`, `tsx`, `@types/express`, `@types/multer`, `@types/node`, `@types/cors`, `eslint`, `prettier`
+- [x] Create `frontend/` with Vite + React + TypeScript template (`npm create vite`)
+- [x] Install frontend dependencies: `axios`, `papaparse`, `@types/papaparse`
+- [x] Install and configure Tailwind CSS in frontend
+- [x] Add root-level `.gitignore` covering `node_modules`, `.env`, `dist`
 
 ---
 
