@@ -45,6 +45,25 @@ function surroundingContext(paragraphText: string): string {
 }
 
 /**
+ * Returns true if a paragraph is an actual References / Bibliography section heading.
+ *
+ * We require EITHER:
+ *   a) The text is explicitly plural ("References", "Bibliography", "Works Cited") — in which
+ *      case we trust it regardless of style, OR
+ *   b) The text matches the broader singular/plural pattern AND the paragraph has a
+ *      heading-related styleId — so a bare table-cell header like "Reference" (styleId="")
+ *      is NOT mistaken for the section heading.
+ */
+function isReferencesHeading(para: ParsedParagraph): boolean {
+  const text = para.text.trim();
+  // Explicitly plural forms are always trusted
+  if (/^(?:references|bibliography|works?\s+cited)$/i.test(text)) return true;
+  // Singular "Reference" only counts if it carries a heading style
+  const hasHeadingStyle = /heading|title|section/i.test(para.styleId);
+  return /^reference$/i.test(text) && hasHeadingStyle;
+}
+
+/**
  * Find all in-text citation candidates in the document paragraphs.
  * Skips the References / Bibliography section (paragraphs that are reference entries
  * themselves start with "Author, I." pattern followed by a year in parens).
@@ -57,7 +76,7 @@ export function extractCitations(paragraphs: ParsedParagraph[]): CitationCandida
 
   for (const para of paragraphs) {
     // Stop processing once we hit the References heading
-    if (/^(?:references?|bibliography|works?\s+cited)$/i.test(para.text.trim())) {
+    if (isReferencesHeading(para)) {
       inReferencesSection = true;
       continue;
     }
@@ -92,6 +111,13 @@ export function extractCitations(paragraphs: ParsedParagraph[]): CitationCandida
         });
       }
     }
+  }
+
+  if (candidates.length === 0) {
+    console.warn(chalk.yellow('[citationExtractor] No citations found. Sample paragraph texts:'));
+    paragraphs.slice(0, 5).forEach((p, i) =>
+      console.warn(chalk.dim(`  [${i}] page ${p.pageNumber}: "${p.text.slice(0, 120)}"`))
+    );
   }
 
   console.log(chalk.green(`[citationExtractor] Found ${candidates.length} citation(s)`));

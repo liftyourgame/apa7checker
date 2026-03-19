@@ -61,17 +61,27 @@ Return ONLY a JSON object with this exact structure (one entry per input citatio
 const BIBLIOGRAPHY_SYSTEM_PROMPT = `\
 You are an expert APA7 bibliography (References list) checker.
 
+IMPORTANT — APA7 Author Types (§9.11):
+  • Individual authors use "Surname, I. I." format.
+  • GROUP / ORGANISATIONAL authors (companies, government bodies, associations, websites,
+    databases, etc.) use the FULL ORGANISATION NAME with NO surname-comma-initial format.
+    Examples: "World Health Organization.", "ICMJE.", "Web of Science.", "Australian Bureau of Statistics."
+    These are VALID APA7 — do NOT flag them as author-format errors.
+
 For each reference entry in the input JSON array, check against APA7 rules:
-1. Author format must be Surname, I. I. → severity "error" if wrong
-2. Year in parentheses followed by period: (2020). → severity "error" if wrong
-3. Article/book title must use sentence case (only first word + proper nouns capitalised) → severity "warning" if wrong
+1. Author format: individual authors must be Surname, I. I.; group/org authors use the full
+   name as-is — both are valid → severity "error" only if the format is clearly malformed
+   (e.g., mixed personal and org style, missing period after abbreviation)
+2. Year in parentheses followed by period: (2020). or (2020a). → severity "error" if wrong
+3. Article/book/webpage title must use sentence case (only first word + proper nouns capitalised) → severity "warning" if wrong
 4. Journal name must use title case → severity "warning" if wrong
 5. DOI should use https://doi.org/... format → severity "warning" if incorrect
 6. No full stop after a URL or DOI → severity "warning" if present
 7. hasHangingIndent=false means no hanging indent detected → severity "error"
 8. Journal articles need: author, year, title, journal, volume, pages, DOI → severity "error" if major fields missing
 9. Books need: author, year, title, publisher → severity "error" if missing
-10. Entry is fully correct → severity "ok", issue "Valid"
+10. Webpages / online sources need: author (person or org), year, title, site name, URL → severity "error" if major fields missing
+11. Entry is fully correct → severity "ok", issue "Valid"
 
 Return ONLY a JSON object with this exact structure (one entry per input reference, same order):
 {

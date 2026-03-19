@@ -16,11 +16,29 @@ import type { ReferenceEntry } from '../types/schemas';
 const HEADING_RE = /^(?:references?|bibliography|works?\s+cited)$/i;
 
 /**
+ * Determines if a paragraph is an actual References/Bibliography section heading
+ * rather than, e.g., a table column header labelled "Reference".
+ *
+ * Rules:
+ *   - Explicitly plural forms ("References", "Bibliography", "Works Cited") are always
+ *     accepted regardless of styleId.
+ *   - Singular "Reference" is only accepted when the paragraph carries a heading style,
+ *     preventing table cell headers (styleId="") from triggering false section detection.
+ */
+function isReferencesHeading(para: ParsedParagraph): boolean {
+  const text = para.text.trim();
+  if (/^(?:references|bibliography|works?\s+cited)$/i.test(text)) return true;
+  const hasHeadingStyle = /heading|title|section/i.test(para.styleId);
+  return /^reference$/i.test(text) && hasHeadingStyle;
+}
+
+/**
  * A heuristic check: does this paragraph text look like a bibliography entry?
  * Entries are at least 20 characters and contain a year in parentheses.
  */
 function looksLikeEntry(text: string): boolean {
-  return text.length >= 20 && /\(\d{4}\b|n\.d\./.test(text);
+  // Must be long enough and contain a year in parens like (2020) or (2020a) or n.d.
+  return text.length >= 20 && /\(\d{4}[a-z]?\)|n\.d\./.test(text);
 }
 
 /**
@@ -40,7 +58,7 @@ export function extractBibliography(paragraphs: ParsedParagraph[]): ReferenceEnt
       /^heading/i.test(para.styleId) || /^(title|subtitle)$/i.test(para.styleId);
 
     // Detect start of References section
-    if (HEADING_RE.test(trimmed)) {
+    if (isReferencesHeading(para)) {
       inSection = true;
       console.log(chalk.cyan(`[bibliographyParser] References heading found: "${trimmed}"`));
       continue;
@@ -60,6 +78,17 @@ export function extractBibliography(paragraphs: ParsedParagraph[]): ReferenceEnt
 
   if (!inSection) {
     console.warn(chalk.yellow('[bibliographyParser] No References section heading found'));
+    console.warn(chalk.dim('  Tip: the heading must say "References", "Bibliography", or "Works Cited"'));
+  }
+
+  if (inSection && entries.length === 0) {
+    console.warn(chalk.yellow('[bibliographyParser] Section found but 0 entries matched. Sample paragraphs after heading:'));
+    const afterHeading = paragraphs.slice(
+      paragraphs.findIndex((p) => isReferencesHeading(p)) + 1
+    );
+    afterHeading.slice(0, 5).forEach((p, i) =>
+      console.warn(chalk.dim(`  [${i}] indent=${p.hasHangingIndent} text="${p.text.slice(0, 120)}"`))
+    );
   }
 
   console.log(chalk.green(`[bibliographyParser] Found ${entries.length} reference entry/entries`));
