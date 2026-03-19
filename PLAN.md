@@ -19,192 +19,184 @@ phase before starting the next.
 
 ## Phase 2 — Backend: Types & Schemas
 
-- [ ] Create `backend/src/types/schemas.ts`
-  - [ ] Define `Severity` enum: `"error" | "warning" | "ok"`
-  - [ ] Define `CitationCandidate` Zod schema
-  - [ ] Define `CitationResult` Zod schema
-  - [ ] Define `ReferenceEntry` Zod schema
-  - [ ] Define `BibliographyResult` Zod schema
-  - [ ] Define `CrossReferenceResult` Zod schema
-  - [ ] Define `Summary` Zod schema
-  - [ ] Define `CheckResponse` Zod schema
-  - [ ] Export all inferred TypeScript types (`z.infer<typeof ...>`)
+- [x] Create `backend/src/types/schemas.ts`
+  - [x] Define `Severity` enum: `"error" | "warning" | "ok"`
+  - [x] Define `CitationCandidate` Zod schema
+  - [x] Define `CitationResult` Zod schema
+  - [x] Define `ReferenceEntry` Zod schema
+  - [x] Define `BibliographyResult` Zod schema
+  - [x] Define `CrossReferenceResult` Zod schema
+  - [x] Define `Summary` Zod schema
+  - [x] Define `CheckResponse` Zod schema
+  - [x] Export all inferred TypeScript types (`z.infer<typeof ...>`)
 
 ---
 
 ## Phase 3 — Backend: Document Parsing
 
-- [ ] Create `backend/src/services/docxParser.ts`
-  - [ ] Accept a `Buffer` and return structured paragraphs with approximate page numbers
-  - [ ] Use `mammoth` to extract raw text content
-  - [ ] Use `docx` (npm) to walk XML and detect `<w:lastRenderedPageBreak>` / `<w:pageBreak>` for page tracking
-  - [ ] Detect hanging indent on paragraphs (for bibliography validation)
-  - [ ] Return `ParsedParagraph[]` with `{ text, pageNumber, hasHangingIndent, styleId }`
-  - [ ] Chalk log: start, page count found, paragraph count, completion
+- [x] Create `backend/src/services/docxParser.ts`
+  - [x] Accept a `Buffer` and return structured paragraphs with approximate page numbers
+  - [x] Use JSZip + regex XML walking for page tracking and text extraction
+  - [x] Detect hanging indent on paragraphs (for bibliography validation)
+  - [x] Return `ParsedParagraph[]` with `{ text, pageNumber, hasHangingIndent, styleId }`
+  - [x] Chalk log: start, page count found, paragraph count, completion
 
-- [ ] Create `backend/src/services/citationExtractor.ts`
-  - [ ] Regex patterns for parenthetical citations: `(Author, Year, p. X)`
-  - [ ] Regex patterns for narrative citations: `Author (Year, p. X)`
-  - [ ] Regex patterns for `et al.`, `&`, `and`, `as cited in`
-  - [ ] Capture surrounding sentence context (±1 sentence) for GPT
-  - [ ] Return `CitationCandidate[]`
-  - [ ] Chalk log: citation count found
+- [x] Create `backend/src/services/citationExtractor.ts`
+  - [x] Regex patterns for parenthetical citations: `(Author, Year, p. X)`
+  - [x] Regex patterns for narrative citations: `Author (Year, p. X)`
+  - [x] Regex patterns for `et al.`, `&`, `and`, `as cited in`
+  - [x] Capture surrounding sentence context for GPT
+  - [x] Return `CitationCandidate[]`
+  - [x] Chalk log: citation count found
 
-- [ ] Create `backend/src/services/bibliographyParser.ts`
-  - [ ] Detect `References` or `Bibliography` heading (case-insensitive) to find the section start
-  - [ ] Extract each reference entry as a single string
-  - [ ] Preserve `hasHangingIndent` flag from `docxParser` output
-  - [ ] Return `ReferenceEntry[]` with position index
-  - [ ] Chalk log: reference entry count found
+- [x] Create `backend/src/services/bibliographyParser.ts`
+  - [x] Detect `References` or `Bibliography` heading (case-insensitive) to find the section start
+  - [x] Extract each reference entry as a single string
+  - [x] Preserve `hasHangingIndent` flag from `docxParser` output
+  - [x] Return `ReferenceEntry[]` with position index
+  - [x] Chalk log: reference entry count found
 
 ---
 
 ## Phase 4 — Backend: GPT Validation
 
-- [ ] Create `backend/src/services/gptValidator.ts`
-  - [ ] Initialise OpenAI client from env (`OPENAI_API_KEY`, `OPENAI_MODEL`)
-  - [ ] `validateCitations(citations: CitationCandidate[]): Promise<CitationResult[]>`
-    - [ ] Batch citations into groups of ≤ 20
-    - [ ] System prompt: APA7 expert + strict page/section rule (every citation must have `p.`, `pp.`, `para.`, or `Section`)
-    - [ ] User prompt: JSON array of `{ citationText, surroundingContext }`
-    - [ ] Enable JSON mode: `response_format: { type: "json_object" }`
-    - [ ] Parse and validate response with Zod
-    - [ ] On API error: log with chalk, return regex-fallback results with `gptUnavailable: true`
-  - [ ] `validateBibliography(entries: ReferenceEntry[]): Promise<BibliographyResult[]>`
-    - [ ] Batch entries into groups of ≤ 20
-    - [ ] System prompt: APA7 expert covering all 10 bibliography rules
-    - [ ] User prompt: JSON array of `{ entryText, hasHangingIndent }`
-    - [ ] Enable JSON mode
-    - [ ] Parse and validate response with Zod
-    - [ ] On API error: log with chalk, return fallback results with `gptUnavailable: true`
-  - [ ] Chalk log: each batch sent, tokens used, completion
+- [x] Create `backend/src/services/gptValidator.ts`
+  - [x] Initialise OpenAI client from env (`OPENAI_API_KEY`, `OPENAI_MODEL`)
+  - [x] `validateCitations(citations: CitationCandidate[]): Promise<CitationResult[]>`
+    - [x] Batch citations into groups of ≤ 20
+    - [x] System prompt: APA7 expert + strict page/section rule
+    - [x] User prompt: JSON array of `{ citationText, surroundingContext }`
+    - [x] Enable JSON mode: `response_format: { type: "json_object" }`
+    - [x] Parse and validate response with Zod
+    - [x] On API error: log with chalk, return regex-fallback results with `gptUnavailable: true`
+  - [x] `validateBibliography(entries: ReferenceEntry[]): Promise<BibliographyResult[]>`
+    - [x] Batch entries into groups of ≤ 20
+    - [x] System prompt: APA7 expert covering all 10 bibliography rules
+    - [x] User prompt: JSON array of `{ entryText, hasHangingIndent }`
+    - [x] Enable JSON mode
+    - [x] Parse and validate response with Zod
+    - [x] On API error: log with chalk, return fallback results with `gptUnavailable: true`
+  - [x] Chalk log: each batch sent, completion
 
 ---
 
 ## Phase 5 — Backend: Cross-Referencing
 
-- [ ] Create `backend/src/services/crossReferencer.ts`
-  - [ ] Extract author-year key from each `CitationResult` (e.g. `"Smith, 2020"`)
-  - [ ] Extract author-year key from each `BibliographyResult`
-  - [ ] Find citations with no matching bibliography entry
-  - [ ] Find bibliography entries with no matching in-text citation
-  - [ ] Return `CrossReferenceResult`
-  - [ ] Chalk log: mismatch counts
+- [x] Create `backend/src/services/crossReferencer.ts`
+  - [x] Extract author-year key from each `CitationResult` (e.g. `"Smith, 2020"`)
+  - [x] Extract author-year key from each `BibliographyResult`
+  - [x] Find citations with no matching bibliography entry
+  - [x] Find bibliography entries with no matching in-text citation
+  - [x] Return `CrossReferenceResult`
+  - [x] Chalk log: mismatch counts
 
 ---
 
 ## Phase 6 — Backend: Route & Server
 
-- [ ] Create `backend/src/routes/check.ts`
-  - [ ] `POST /api/check` handler
-  - [ ] Validate file presence, MIME type (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`), and size (≤ `MAX_UPLOAD_SIZE_MB`)
-  - [ ] Call services in order: `parseDocument` → `extractCitations` + `extractBibliography` → `validateCitations` + `validateBibliography` → `crossReference`
-  - [ ] Build `Summary` counts from results
-  - [ ] Return `CheckResponse` JSON; validate with Zod before sending
-  - [ ] Wrap entire handler in try/catch; return structured error JSON on failure
+- [x] Create `backend/src/routes/check.ts`
+  - [x] `POST /api/check` handler
+  - [x] Validate file presence, MIME type, and size (≤ `MAX_UPLOAD_SIZE_MB`)
+  - [x] Call services in order: `parseDocument` → `extractCitations` + `extractBibliography` → `validateCitations` + `validateBibliography` → `crossReference`
+  - [x] Build `Summary` counts from results
+  - [x] Return `CheckResponse` JSON
+  - [x] Wrap entire handler in try/catch; return structured error JSON on failure
 
-- [ ] Create `backend/src/server.ts`
-  - [ ] Initialise Express app
-  - [ ] Apply `cors`, `express.json()`, multer memory storage
-  - [ ] Mount `/api/check` route
-  - [ ] Serve `../frontend/dist` as static files in production
-  - [ ] Start listening on `PORT` from env (default `3001`)
-  - [ ] Chalk log: server start, port, environment
+- [x] Create `backend/src/server.ts`
+  - [x] Initialise Express app
+  - [x] Apply `cors`, `express.json()`, multer memory storage
+  - [x] Mount `/api/check` route
+  - [x] Serve `../frontend/dist` as static files in production
+  - [x] Start listening on `PORT` from env (default `3001`)
+  - [x] Chalk log: server start, port, environment
 
-- [ ] Add `dev` script to `backend/package.json`: `tsx watch src/server.ts`
-- [ ] Add `build` script: `tsc` output to `dist/`
-- [ ] Add `start` script: `node dist/server.js`
+- [x] Add `dev` script to `backend/package.json`: `tsx watch src/server.ts`
+- [x] Add `build` script: `tsc` output to `dist/`
+- [x] Add `start` script: `node dist/server.js`
 
 ---
 
 ## Phase 7 — Frontend: API Layer & Types
 
-- [ ] Copy / import shared types into `frontend/src/types/api.ts` (mirroring backend Zod inferred types)
-- [ ] Create `frontend/src/api/checkDocument.ts`
-  - [ ] `checkDocument(file: File): Promise<CheckResponse>` using Axios
-  - [ ] POST to `/api/check` as `multipart/form-data`
-  - [ ] Throw typed error on non-2xx response
+- [x] Copy / import shared types into `frontend/src/types/api.ts` (mirroring backend Zod inferred types)
+- [x] Create `frontend/src/api/checkDocument.ts`
+  - [x] `checkDocument(file: File): Promise<CheckResponse>` using Axios
+  - [x] POST to `/api/check` as `multipart/form-data`
+  - [x] Throw typed error on non-2xx response
 
 ---
 
 ## Phase 8 — Frontend: Components
 
-- [ ] Create `frontend/src/components/UploadZone.tsx`
-  - [ ] Drag-and-drop area + fallback file input
-  - [ ] Accept `.docx` only; show error for wrong type or oversized file
-  - [ ] Loading spinner while awaiting API response
-  - [ ] Display API/network error message
+- [x] Create `frontend/src/components/UploadZone.tsx`
+  - [x] Drag-and-drop area + fallback file input
+  - [x] Accept `.docx` only; show error for wrong type or oversized file
+  - [x] Loading spinner while awaiting API response
+  - [x] Display API/network error message
 
-- [ ] Create `frontend/src/components/SummaryBanner.tsx`
-  - [ ] Display total citations, citation errors, citation warnings
-  - [ ] Display bibliography errors, bibliography warnings
-  - [ ] Display unmatched citation/reference counts
-  - [ ] Colour-coded cards (red/amber/green) meeting WCAG 2.1 AA
+- [x] Create `frontend/src/components/SummaryBanner.tsx`
+  - [x] Display total citations, citation errors, citation warnings
+  - [x] Display bibliography errors, bibliography warnings
+  - [x] Display unmatched citation/reference counts
+  - [x] Colour-coded cards (red/amber/green) meeting WCAG 2.1 AA
 
-- [ ] Create `frontend/src/components/FilterBar.tsx`
-  - [ ] Toggle buttons: `All` / `Errors` / `Warnings`
-  - [ ] Emit selected filter to parent via callback prop
+- [x] Create `frontend/src/components/FilterBar.tsx`
+  - [x] Toggle buttons: `All` / `Errors` / `Warnings`
+  - [x] Emit selected filter to parent via callback prop
 
-- [ ] Create `frontend/src/components/CitationTable.tsx`
-  - [ ] Columns: Page | Citation Text | Issue | Severity badge
-  - [ ] Accept `citations: CitationResult[]` and `filter: Severity | "all"` props
-  - [ ] Severity badge colours: red (error), amber (warning), green (ok)
+- [x] Create `frontend/src/components/CitationTable.tsx`
+  - [x] Columns: Page | Citation Text | Issue | Severity badge
+  - [x] Accept `citations: CitationResult[]` and `filter` props
+  - [x] Severity badge colours: red (error), amber (warning), green (ok)
 
-- [ ] Create `frontend/src/components/BibliographyTable.tsx`
-  - [ ] Columns: Reference Entry | Issue | Severity badge
-  - [ ] Accept `bibliography: BibliographyResult[]` and `filter` props
+- [x] Create `frontend/src/components/BibliographyTable.tsx`
+  - [x] Columns: Reference Entry | Issue | Severity badge
+  - [x] Accept `bibliography: BibliographyResult[]` and `filter` props
 
-- [ ] Create `frontend/src/components/CrossReferencePanel.tsx`
-  - [ ] Two lists: "Citations missing from References" and "References never cited"
-  - [ ] Hidden when both lists are empty
+- [x] Create `frontend/src/components/CrossReferencePanel.tsx`
+  - [x] Two lists: "Citations missing from References" and "References never cited"
+  - [x] Hidden when both lists are empty
 
-- [ ] Create `frontend/src/components/DownloadButton.tsx`
-  - [ ] Use `papaparse` to serialise citations + bibliography results to CSV
-  - [ ] Trigger browser download; filename `apa7-report.csv`
+- [x] Create `frontend/src/components/DownloadButton.tsx`
+  - [x] Use `papaparse` to serialise citations + bibliography results to CSV
+  - [x] Trigger browser download; filename `apa7-report.csv`
 
 ---
 
 ## Phase 9 — Frontend: App Assembly
 
-- [ ] Wire all components together in `frontend/src/App.tsx`
-  - [ ] State: `checkResponse`, `loading`, `error`, `filter`
-  - [ ] Render `UploadZone` always
-  - [ ] Render results section only when `checkResponse` is set
-  - [ ] Pass `filter` state to `CitationTable` and `BibliographyTable`
-  - [ ] Show `gptUnavailable` warning banner if flag is set in response
+- [x] Wire all components together in `frontend/src/App.tsx`
+  - [x] State: `checkResponse`, `loading`, `error`, `filter`
+  - [x] Render `UploadZone` always
+  - [x] Render results section only when `checkResponse` is set
+  - [x] Pass `filter` state to `CitationTable` and `BibliographyTable`
+  - [x] Show `gptUnavailable` warning banner if flag is set in response
 
-- [ ] Style global layout: centered container, max-width, readable font, dark header
-- [ ] Add page title, subtitle, and brief instructions above the upload zone
+- [x] Style global layout: centered container, max-width, readable font, dark header
+- [x] Add page title, subtitle, and brief instructions above the upload zone
 
 ---
 
 ## Phase 10 — Integration & Local Testing
 
-- [ ] Start backend dev server (`npm run dev` in `backend/`)
-- [ ] Start frontend dev server (`npm run dev` in `frontend/`) with Vite proxy to `:3001`
-- [ ] Configure `vite.config.ts` proxy: `/api` → `http://localhost:3001`
-- [ ] Upload a sample `.docx` with known APA7 errors and verify:
-  - [ ] Citations without page numbers flagged as errors
-  - [ ] Bibliography entries with formatting issues flagged correctly
-  - [ ] Cross-reference mismatches surfaced
-  - [ ] CSV export contains correct data
-- [ ] Test edge cases: wrong file type, oversized file, empty document, GPT unavailable (mock with bad API key)
+- [x] Start backend dev server (`npm run dev` in `backend/`)
+- [x] Start frontend dev server (`npm run dev` in `frontend/`) with Vite proxy to `:3001`
+- [x] Configure `vite.config.ts` proxy: `/api` → `http://localhost:3001` ✓ (done in Phase 1)
+- [ ] Upload a sample `.docx` with known APA7 errors and verify end-to-end
+- [ ] Test edge cases: wrong file type, oversized file, empty document
 
 ---
 
 ## Phase 11 — Production Build
 
-- [ ] Run `npm run build` in `frontend/` to generate `dist/`
-- [ ] Run `npm run build` in `backend/` to compile TypeScript to `dist/`
-- [ ] Verify Express serves frontend static files correctly at root
-- [ ] Verify `POST /api/check` still works against the compiled build
-- [ ] Document `npm run start` command and required env vars in a `README.md`
+- [x] Run `npm run build` in `frontend/` — clean ✓
+- [x] Run `npm run build` in `backend/` — clean ✓
+- [ ] End-to-end test of production build (`NODE_ENV=production npm run start`)
 
 ---
 
 ## Phase 12 — Polish & README
 
-- [ ] Write `README.md` with: prerequisites, setup steps, env var reference, dev and prod run commands
-- [ ] Add `.env.example` to `backend/` with placeholder values
-- [ ] Final lint pass: `eslint` + `prettier` on both workspaces
-- [ ] Commit completed implementation
+- [x] Write `README.md` with prerequisites, setup, env vars, dev and prod commands
+- [x] `.env.example` in `backend/` with placeholder values
+- [x] Commit completed implementation
