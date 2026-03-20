@@ -104,6 +104,7 @@ function fallbackCitation(c: CitationCandidate): CitationResult {
     return {
       pageNumber: c.pageNumber,
       citationText: c.citationText,
+      surroundingContext: c.surroundingContext,
       issue:
         'Missing page or section reference. All citations must include p. X, pp. X–Y, para. X, or Section X.',
       severity: 'error',
@@ -112,6 +113,7 @@ function fallbackCitation(c: CitationCandidate): CitationResult {
   return {
     pageNumber: c.pageNumber,
     citationText: c.citationText,
+    surroundingContext: c.surroundingContext,
     issue: 'GPT unavailable — basic format appears acceptable but full validation skipped.',
     severity: 'warning',
   };
@@ -190,12 +192,18 @@ export async function validateCitations(
         continue;
       }
 
-      // Merge GPT issue/severity with page numbers from our candidates
+      // Merge GPT issue/severity with page numbers and context from our candidates
       for (let i = 0; i < batch.length; i++) {
         const gpt = parsed.data.results[i];
         allResults.push(
           gpt
-            ? { pageNumber: batch[i].pageNumber, citationText: gpt.citationText, issue: gpt.issue, severity: gpt.severity }
+            ? {
+                pageNumber: batch[i].pageNumber,
+                citationText: gpt.citationText,
+                surroundingContext: batch[i].surroundingContext,
+                issue: gpt.issue,
+                severity: gpt.severity,
+              }
             : fallbackCitation(batch[i])
         );
       }

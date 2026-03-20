@@ -40,6 +40,9 @@ export type ReferenceEntry = z.infer<typeof ReferenceEntrySchema>;
 export const CitationResultSchema = z.object({
   pageNumber: z.number().int().positive(),
   citationText: z.string(),
+  /** The paragraph text surrounding the citation — shown in the UI to help
+   *  the user locate the citation in their document. */
+  surroundingContext: z.string().optional(),
   issue: z.string(),
   severity: SeveritySchema,
 });

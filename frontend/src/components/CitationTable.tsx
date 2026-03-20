@@ -1,6 +1,10 @@
 /**
  * Table of validated in-text citations.
  * Columns: Page | Citation Text | Issue | Severity
+ *
+ * For error/warning rows the surrounding paragraph context is shown beneath the
+ * citation text, with the citation itself highlighted so the user can quickly
+ * find it in their document.
  */
 import type { CitationResult } from '../types/api';
 import type { Filter } from './FilterBar';
@@ -9,6 +13,27 @@ import { SeverityBadge } from './SeverityBadge';
 interface Props {
   citations: CitationResult[];
   filter: Filter;
+}
+
+/**
+ * Render the surrounding context paragraph with the citation text highlighted.
+ * Splits on the first occurrence of citationText and wraps it in a <mark>.
+ */
+function ContextSnippet({ context, citationText }: { context: string; citationText: string }) {
+  const idx = context.indexOf(citationText);
+  if (idx === -1) {
+    // Citation not found verbatim in context — just show the raw text
+    return <span>{context}</span>;
+  }
+  return (
+    <>
+      {context.slice(0, idx)}
+      <mark className="rounded bg-yellow-200 px-0.5 text-yellow-900 not-italic">
+        {citationText}
+      </mark>
+      {context.slice(idx + citationText.length)}
+    </>
+  );
 }
 
 export function CitationTable({ citations, filter }: Props) {
@@ -49,10 +74,23 @@ export function CitationTable({ citations, filter }: Props) {
                       : 'border-l-4 border-l-green-400'
                   }`}
                 >
-                  <td className="px-4 py-3 font-mono text-gray-500">{c.pageNumber}</td>
-                  <td className="px-4 py-3 font-mono text-gray-800 break-all">{c.citationText}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.issue}</td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3 font-mono text-gray-500 align-top">{c.pageNumber}</td>
+                  <td className="px-4 py-3 align-top">
+                    {/* Citation text */}
+                    <span className="font-mono text-gray-800 break-all">{c.citationText}</span>
+
+                    {/* Surrounding context — only shown for errors and warnings */}
+                    {c.severity !== 'ok' && c.surroundingContext && (
+                      <p className="mt-1.5 text-xs text-gray-500 italic leading-relaxed border-l-2 border-gray-200 pl-2">
+                        <ContextSnippet
+                          context={c.surroundingContext}
+                          citationText={c.citationText}
+                        />
+                      </p>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 align-top">{c.issue}</td>
+                  <td className="px-4 py-3 text-center align-top">
                     <SeverityBadge severity={c.severity} />
                   </td>
                 </tr>

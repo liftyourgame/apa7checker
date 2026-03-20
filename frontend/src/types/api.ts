@@ -8,6 +8,8 @@ export type Severity = 'error' | 'warning' | 'ok';
 export interface CitationResult {
   pageNumber: number;
   citationText: string;
+  /** Paragraph text surrounding the citation — shown in the UI to help locate it. */
+  surroundingContext?: string;
   issue: string;
   severity: Severity;
 }
