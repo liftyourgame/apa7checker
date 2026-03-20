@@ -22,6 +22,11 @@ import {
 
 const BATCH_SIZE = 20;
 
+// Maximum time to wait for a single GPT API call (ms).
+// The two validation calls run in parallel, so the total wall-clock budget is
+// roughly this value. Set below the frontend Axios timeout (180 s) with margin.
+const GPT_TIMEOUT_MS = 120_000; // 2 minutes per call
+
 // Lazy-initialised client so the module can be imported without a valid key
 let client: OpenAI | null = null;
 function getClient(): OpenAI {
@@ -160,17 +165,20 @@ export async function validateCitations(
         surroundingContext: c.surroundingContext,
       }));
 
-      const completion = await getClient().chat.completions.create({
-        model: process.env.OPENAI_MODEL ?? 'gpt-4o',
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: CITATION_SYSTEM_PROMPT },
-          {
-            role: 'user',
-            content: `Validate these APA7 in-text citations:\n${JSON.stringify(payload, null, 2)}`,
-          },
-        ],
-      });
+      const completion = await getClient().chat.completions.create(
+        {
+          model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: CITATION_SYSTEM_PROMPT },
+            {
+              role: 'user',
+              content: `Validate these APA7 in-text citations:\n${JSON.stringify(payload, null, 2)}`,
+            },
+          ],
+        },
+        { timeout: GPT_TIMEOUT_MS }
+      );
 
       const raw = completion.choices[0]?.message?.content ?? '{}';
       const parsed = GptCitationBatchResponseSchema.safeParse(JSON.parse(raw));
@@ -233,17 +241,20 @@ export async function validateBibliography(
         position: e.position,
       }));
 
-      const completion = await getClient().chat.completions.create({
-        model: process.env.OPENAI_MODEL ?? 'gpt-4o',
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: BIBLIOGRAPHY_SYSTEM_PROMPT },
-          {
-            role: 'user',
-            content: `Validate these APA7 bibliography entries:\n${JSON.stringify(payload, null, 2)}`,
-          },
-        ],
-      });
+      const completion = await getClient().chat.completions.create(
+        {
+          model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: BIBLIOGRAPHY_SYSTEM_PROMPT },
+            {
+              role: 'user',
+              content: `Validate these APA7 bibliography entries:\n${JSON.stringify(payload, null, 2)}`,
+            },
+          ],
+        },
+        { timeout: GPT_TIMEOUT_MS }
+      );
 
       const raw = completion.choices[0]?.message?.content ?? '{}';
       const parsed = GptBibliographyBatchResponseSchema.safeParse(JSON.parse(raw));

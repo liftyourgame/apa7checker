@@ -79,7 +79,10 @@ export function UploadZone({ onFileSelect, loading, error, onReset, hasResults }
           <div className="flex flex-col items-center gap-4">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
             <p className="text-sm font-medium text-gray-600">
-              Analysing document — this may take up to 30 seconds…
+              Analysing document with GPT…
+            </p>
+            <p className="text-xs text-gray-400">
+              This typically takes 30–90 seconds. Please don't close the tab.
             </p>
           </div>
         ) : (

@@ -18,7 +18,9 @@ export class DocumentCheckError extends Error {
 
 /**
  * Upload a .docx File to the backend and return the APA7 validation results.
- * Timeout is 90 seconds to accommodate GPT processing time.
+ * Timeout is 3 minutes — GPT-4o validation of citations + bibliography can
+ * take 60–90 s under load; parallel calls plus network overhead can push
+ * beyond 90 s, so we give a generous buffer.
  */
 export async function checkDocument(file: File): Promise<CheckResponse> {
   const form = new FormData();
@@ -27,7 +29,7 @@ export async function checkDocument(file: File): Promise<CheckResponse> {
   try {
     const { data } = await axios.post<CheckResponse>('/api/check', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 90_000,
+      timeout: 180_000,   // 3 minutes
     });
     return data;
   } catch (err) {
