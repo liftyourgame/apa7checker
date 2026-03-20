@@ -50,9 +50,21 @@ export default function App() {
     <div className="min-h-screen bg-gray-50">
       {/* ── Header ── */}
       <header className="bg-gray-900 text-white">
-        <div className="mx-auto max-w-5xl px-6 py-5">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl" aria-hidden>📚</span>
+        <div className="mx-auto max-w-5xl px-6 py-4">
+          <div className="flex items-center gap-4">
+            <a
+              href="https://humanisingtechnologies.au"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Humanising Technologies website"
+            >
+              <img
+                src="/logo.webp"
+                alt="Humanising Technologies"
+                className="h-12 w-auto flex-shrink-0 opacity-90 hover:opacity-100 transition-opacity"
+              />
+            </a>
+            <div className="h-8 w-px bg-gray-600" aria-hidden />
             <div>
               <h1 className="text-xl font-bold leading-tight">APA7 Reference Checker</h1>
               <p className="text-sm text-gray-400">
@@ -119,8 +131,47 @@ export default function App() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-gray-200 py-6 text-center text-xs text-gray-400">
-        APA7 Reference Checker — files are processed in memory and never stored
+      <footer className="border-t border-gray-200 py-8 text-center text-xs text-gray-400 space-y-1 px-6">
+        <p>
+          Developed by{' '}
+          <a
+            href="mailto:greg@humn.au"
+            className="underline hover:text-gray-600"
+          >
+            Greg Turner
+          </a>
+          {' '}·{' '}
+          <a
+            href="https://humanisingtechnologies.au"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-600"
+          >
+            Humanising Technologies
+          </a>
+        </p>
+        <p>APA7 Reference Checker — uploaded files are processed in memory and never stored on our servers.</p>
+        <p>
+          Document content is sent to{' '}
+          <a
+            href="https://openai.com/policies/privacy-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-600"
+          >
+            OpenAI
+          </a>{' '}
+          for analysis. OpenAI may use submitted data to improve their models in accordance with their{' '}
+          <a
+            href="https://openai.com/policies/privacy-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-600"
+          >
+            Privacy Policy
+          </a>
+          . Avoid uploading documents containing sensitive or confidential information.
+        </p>
       </footer>
     </div>
   );
