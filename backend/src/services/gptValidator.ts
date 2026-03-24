@@ -95,10 +95,14 @@ For each reference entry in the input JSON array, check against APA7 rules:
 10. Webpages / online sources need: author (person or org), year, title, site name, URL → severity "error" if major fields missing
 11. Entry is fully correct → severity "ok", issue "Valid"
 
+For every entry where severity is "error" or "warning", provide a "suggestedFix" field containing
+the corrected version of the full reference entry formatted exactly as it should appear in APA7.
+Omit "suggestedFix" (or set it to null) when severity is "ok".
+
 Return ONLY a JSON object with this exact structure (one entry per input reference, same order):
 {
   "results": [
-    { "entryText": "...", "issue": "...", "severity": "error"|"warning"|"ok" }
+    { "entryText": "...", "issue": "...", "severity": "error"|"warning"|"ok", "suggestedFix": "..." }
   ]
 }`;
 
@@ -272,10 +276,22 @@ export async function validateBibliography(
       );
 
       const raw = completion.choices[0]?.message?.content ?? '{}';
-      const parsed = GptBibliographyBatchResponseSchema.safeParse(JSON.parse(raw));
+      let parsedJson: unknown;
+      try {
+        parsedJson = JSON.parse(raw);
+      } catch {
+        console.error(chalk.red('[gptValidator] Bibliography response was not valid JSON:'), raw.slice(0, 300));
+        allResults.push(...batch.map(fallbackBibliography));
+        gptUnavailable = true;
+        continue;
+      }
+
+      const parsed = GptBibliographyBatchResponseSchema.safeParse(parsedJson);
 
       if (!parsed.success) {
         console.warn(chalk.yellow('[gptValidator] Unexpected bibliography response shape — using fallback'));
+        console.warn(chalk.dim('[gptValidator] Zod errors:'), JSON.stringify(parsed.error.issues, null, 2));
+        console.warn(chalk.dim('[gptValidator] Raw GPT response:'), JSON.stringify(parsedJson, null, 2).slice(0, 800));
         allResults.push(...batch.map(fallbackBibliography));
         gptUnavailable = true;
         continue;
@@ -285,7 +301,12 @@ export async function validateBibliography(
         const gpt = parsed.data.results[i];
         allResults.push(
           gpt
-            ? { entryText: gpt.entryText, issue: gpt.issue, severity: gpt.severity }
+            ? {
+                entryText: gpt.entryText,
+                issue: gpt.issue,
+                severity: gpt.severity,
+                ...(gpt.suggestedFix ? { suggestedFix: gpt.suggestedFix } : {}),
+              }
             : fallbackBibliography(batch[i])
         );
       }

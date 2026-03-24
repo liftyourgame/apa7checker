@@ -53,6 +53,8 @@ export const BibliographyResultSchema = z.object({
   entryText: z.string(),
   issue: z.string(),
   severity: SeveritySchema,
+  /** GPT-generated corrected version of the entry (omitted when severity is "ok"). */
+  suggestedFix: z.string().nullish().transform((v) => v ?? undefined),
 });
 export type BibliographyResult = z.infer<typeof BibliographyResultSchema>;
 
@@ -107,6 +109,8 @@ export const GptBibliographyBatchResponseSchema = z.object({
       entryText: z.string(),
       issue: z.string(),
       severity: SeveritySchema,
+      /** Corrected entry text — GPT may return null or omit it entirely when valid. */
+      suggestedFix: z.string().nullish().transform((v) => v ?? undefined),
     })
   ),
 });

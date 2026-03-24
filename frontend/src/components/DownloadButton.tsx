@@ -16,6 +16,7 @@ interface CsvRow {
   Text: string;
   Issue: string;
   Severity: string;
+  SuggestedFix: string;
 }
 
 export function DownloadButton({ checkResponse }: Props) {
@@ -27,6 +28,7 @@ export function DownloadButton({ checkResponse }: Props) {
         Text: c.citationText,
         Issue: c.issue,
         Severity: c.severity,
+        SuggestedFix: '',
       })),
       ...checkResponse.bibliography.map((b) => ({
         Type: 'Bibliography',
@@ -34,6 +36,7 @@ export function DownloadButton({ checkResponse }: Props) {
         Text: b.entryText,
         Issue: b.issue,
         Severity: b.severity,
+        SuggestedFix: b.suggestedFix ?? '',
       })),
       ...checkResponse.crossReference.citationsWithoutReference.map((text) => ({
         Type: 'Cross-Reference',
@@ -41,6 +44,7 @@ export function DownloadButton({ checkResponse }: Props) {
         Text: text,
         Issue: 'Citation has no matching bibliography entry',
         Severity: 'error',
+        SuggestedFix: '',
       })),
       ...checkResponse.crossReference.referencesWithoutCitation.map((text) => ({
         Type: 'Cross-Reference',
@@ -48,6 +52,7 @@ export function DownloadButton({ checkResponse }: Props) {
         Text: text,
         Issue: 'Reference entry is never cited in the document body',
         Severity: 'warning',
+        SuggestedFix: '',
       })),
     ];
 

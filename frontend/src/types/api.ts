@@ -18,6 +18,8 @@ export interface BibliographyResult {
   entryText: string;
   issue: string;
   severity: Severity;
+  /** GPT-generated corrected version of the entry (omitted when severity is "ok"). */
+  suggestedFix?: string;
 }
 
 export interface CrossReferenceResult {

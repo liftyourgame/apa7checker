@@ -1,6 +1,6 @@
 /**
  * Table of validated bibliography / References entries.
- * Columns: Reference Entry | Issue | Severity
+ * Columns: Reference Entry | Issue + Suggested Fix | Severity
  */
 import type { BibliographyResult } from '../types/api';
 import type { Filter } from './FilterBar';
@@ -51,7 +51,17 @@ export function BibliographyTable({ bibliography, filter }: Props) {
                   <td className="px-4 py-3 text-gray-800 max-w-xl break-words leading-relaxed">
                     {b.entryText}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{b.issue}</td>
+                  <td className="px-4 py-3 text-gray-600">
+                    <span>{b.issue}</span>
+                    {b.suggestedFix && (
+                      <div className="mt-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
+                        <span className="mb-1 block font-semibold uppercase tracking-wide text-green-600">
+                          Suggested fix
+                        </span>
+                        {b.suggestedFix}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-center">
                     <SeverityBadge severity={b.severity} />
                   </td>
