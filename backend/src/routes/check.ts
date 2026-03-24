@@ -29,7 +29,7 @@ import type { CheckResponse, Summary } from '../types/schemas';
 
 const router = Router();
 
-const MAX_MB = parseInt(process.env.MAX_UPLOAD_SIZE_MB ?? '10', 10);
+const MAX_MB = parseInt(process.env.MAX_UPLOAD_SIZE_MB ?? '50', 10);
 const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
