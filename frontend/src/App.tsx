@@ -13,21 +13,26 @@ import { CitationTable } from './components/CitationTable';
 import { BibliographyTable } from './components/BibliographyTable';
 import { CrossReferencePanel } from './components/CrossReferencePanel';
 import { DownloadButton } from './components/DownloadButton';
+import { ProgressLog } from './components/ProgressLog';
 
 export default function App() {
   const [checkResponse, setCheckResponse] = useState<CheckResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
+  const [progressLog, setProgressLog] = useState<string[]>([]);
 
   const handleFileSelect = useCallback(async (file: File) => {
     setLoading(true);
     setError(null);
     setCheckResponse(null);
     setFilter('all');
+    setProgressLog([]);
 
     try {
-      const result = await checkDocument(file);
+      const result = await checkDocument(file, (message) =>
+        setProgressLog((prev) => [...prev, message])
+      );
       setCheckResponse(result);
     } catch (err) {
       if (err instanceof DocumentCheckError) {
@@ -44,6 +49,7 @@ export default function App() {
     setCheckResponse(null);
     setError(null);
     setFilter('all');
+    setProgressLog([]);
   }, []);
 
   return (
@@ -97,6 +103,9 @@ export default function App() {
             hasResults={!!checkResponse}
           />
         </section>
+
+        {/* Live progress log — visible while the pipeline is running */}
+        {loading && <ProgressLog entries={progressLog} />}
 
         {/* Results */}
         {checkResponse && (

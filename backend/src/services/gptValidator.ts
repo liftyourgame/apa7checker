@@ -136,12 +136,14 @@ function fallbackBibliography(e: ReferenceEntry): BibliographyResult {
       entryText: e.entryText,
       issue: 'Missing hanging indent. GPT validation also unavailable.',
       severity: 'error',
+      suggestedFix: undefined,
     };
   }
   return {
     entryText: e.entryText,
     issue: 'GPT unavailable — entry format could not be fully validated.',
     severity: 'warning',
+    suggestedFix: undefined,
   };
 }
 
@@ -152,9 +154,12 @@ function fallbackBibliography(e: ReferenceEntry): BibliographyResult {
 /**
  * Validate a list of in-text citation candidates via GPT.
  * Returns CitationResult[] and a flag indicating whether GPT was unavailable.
+ * @param onProgress  Optional callback invoked with a human-readable status string
+ *                    at the start and end of each batch — used to stream progress to the client.
  */
 export async function validateCitations(
-  citations: CitationCandidate[]
+  citations: CitationCandidate[],
+  onProgress?: (msg: string) => void
 ): Promise<{ results: CitationResult[]; gptUnavailable: boolean }> {
   if (citations.length === 0) return { results: [], gptUnavailable: false };
 
@@ -170,7 +175,9 @@ export async function validateCitations(
 
   for (let idx = 0; idx < batches.length; idx++) {
     const batch = batches[idx];
+    const batchLabel = `citation batch ${idx + 1} of ${batches.length}`;
     console.log(chalk.cyan(`[gptValidator] Citation batch ${idx + 1}/${batches.length}`));
+    onProgress?.(`Validating citations — ${batchLabel}`);
 
     try {
       const payload = batch.map((c) => ({
@@ -220,6 +227,7 @@ export async function validateCitations(
       }
 
       console.log(chalk.green(`[gptValidator] Citation batch ${idx + 1} complete`));
+      onProgress?.(`Citations ${batchLabel} complete`);
     } catch (err) {
       console.error(chalk.red(`[gptValidator] Citation batch ${idx + 1} failed:`), err);
       allResults.push(...batch.map(fallbackCitation));
@@ -233,9 +241,12 @@ export async function validateCitations(
 /**
  * Validate a list of bibliography entries via GPT.
  * Returns BibliographyResult[] and a flag indicating whether GPT was unavailable.
+ * @param onProgress  Optional callback invoked with a human-readable status string
+ *                    at the start and end of each batch — used to stream progress to the client.
  */
 export async function validateBibliography(
-  entries: ReferenceEntry[]
+  entries: ReferenceEntry[],
+  onProgress?: (msg: string) => void
 ): Promise<{ results: BibliographyResult[]; gptUnavailable: boolean }> {
   if (entries.length === 0) return { results: [], gptUnavailable: false };
 
@@ -251,7 +262,9 @@ export async function validateBibliography(
 
   for (let idx = 0; idx < batches.length; idx++) {
     const batch = batches[idx];
+    const batchLabel = `bibliography batch ${idx + 1} of ${batches.length}`;
     console.log(chalk.cyan(`[gptValidator] Bibliography batch ${idx + 1}/${batches.length}`));
+    onProgress?.(`Validating bibliography — ${batchLabel}`);
 
     try {
       const payload = batch.map((e) => ({
@@ -305,13 +318,14 @@ export async function validateBibliography(
                 entryText: gpt.entryText,
                 issue: gpt.issue,
                 severity: gpt.severity,
-                ...(gpt.suggestedFix ? { suggestedFix: gpt.suggestedFix } : {}),
+                suggestedFix: gpt.suggestedFix ?? undefined,
               }
             : fallbackBibliography(batch[i])
         );
       }
 
       console.log(chalk.green(`[gptValidator] Bibliography batch ${idx + 1} complete`));
+      onProgress?.(`Bibliography ${batchLabel} complete`);
     } catch (err) {
       console.error(chalk.red(`[gptValidator] Bibliography batch ${idx + 1} failed:`), err);
       allResults.push(...batch.map(fallbackBibliography));

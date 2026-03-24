@@ -1,13 +1,21 @@
 /**
  * POST /api/check
  *
- * Accepts a .docx multipart upload, runs the full APA7 validation pipeline,
- * and returns a structured CheckResponse JSON.
+ * Accepts a .docx multipart upload and streams the APA7 validation pipeline
+ * back to the client as Server-Sent Events (SSE).
+ *
+ * Event types:
+ *   progress  { message: string }          — human-readable step update
+ *   result    CheckResponse                — final validated payload
+ *   error     { error: string }            — pipeline failure (after SSE headers sent)
+ *
+ * HTTP errors that occur *before* SSE headers are set (multer failures) are
+ * returned as plain JSON with the appropriate status code.
  *
  * Pipeline:
  *   parseDocument → extractCitations + extractBibliography
- *   → validateCitations + validateBibliography (parallel GPT calls)
- *   → crossReference → buildSummary → respond
+ *   → validateCitations + validateBibliography (parallel GPT calls, each streaming batch progress)
+ *   → crossReference → buildSummary → send result event
  */
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
@@ -78,7 +86,8 @@ function buildSummary(
 router.post('/check', async (req: Request, res: Response): Promise<void> => {
   console.log(chalk.blue.bold('[check] POST /api/check'));
 
-  // 1. Handle file upload
+  // 1. Handle file upload — must happen BEFORE setting SSE headers so that
+  //    multer errors can still be returned as regular HTTP error responses.
   try {
     await runUpload(req, res);
   } catch (err) {
@@ -96,22 +105,47 @@ router.post('/check', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  // 2. Run the validation pipeline
+  // 2. Switch response to Server-Sent Events mode.
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  /** Write a single SSE event frame. */
+  const send = (event: string, data: unknown): void => {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  const progress = (message: string): void => {
+    console.log(chalk.cyan(`[check] ${message}`));
+    send('progress', { message });
+  };
+
+  // 3. Run the validation pipeline, emitting progress at each step.
   try {
+    progress('Parsing document…');
     const paragraphs = await parseDocument(req.file.buffer);
+    const pageCount = paragraphs.reduce((m, p) => Math.max(m, p.pageNumber ?? 0), 0);
+    progress(`Parsed — ${paragraphs.length} paragraphs, ~${pageCount} page(s)`);
 
-    const [citationCandidates, referenceEntries] = [
-      extractCitations(paragraphs),
-      extractBibliography(paragraphs),
-    ];
+    progress('Extracting in-text citations…');
+    const citationCandidates = extractCitations(paragraphs);
+    progress(`Found ${citationCandidates.length} citation(s)`);
 
-    // Run GPT validation calls in parallel for speed
+    progress('Locating References section…');
+    const referenceEntries = extractBibliography(paragraphs);
+    progress(`Found ${referenceEntries.length} reference entry/entries`);
+
+    // Run GPT validation calls in parallel for speed; each call streams its
+    // own batch progress back through the shared `progress` callback.
     const [citVal, bibVal] = await Promise.all([
-      validateCitations(citationCandidates),
-      validateBibliography(referenceEntries),
+      validateCitations(citationCandidates, progress),
+      validateBibliography(referenceEntries, progress),
     ]);
 
+    progress('Cross-referencing citations and bibliography…');
     const crossRef = crossReference(citVal.results, bibVal.results);
+
     const summary = buildSummary(citVal.results, bibVal.results, crossRef);
 
     const response: CheckResponse = {
@@ -122,14 +156,17 @@ router.post('/check', async (req: Request, res: Response): Promise<void> => {
       gptUnavailable: citVal.gptUnavailable || bibVal.gptUnavailable || undefined,
     };
 
-    console.log(chalk.green.bold('[check] Done — sending response'));
-    res.json(response);
+    progress('Complete — sending results');
+    console.log(chalk.green.bold('[check] Done — sending result event'));
+    send('result', response);
+    res.end();
   } catch (err) {
     console.error(chalk.red('[check] Pipeline error:'), err);
-    res.status(500).json({
+    send('error', {
       error: 'Failed to process document.',
       details: err instanceof Error ? err.message : String(err),
     });
+    res.end();
   }
 });
 
